@@ -152,8 +152,19 @@ module Ohai
         end
       end
 
-      def set_attribute(name, *values)
-        @data[name] = Array18(*values)
+      def set_attribute(name, value, *values)
+        parts = [name, value] + values
+
+        # Initialize the path in the @data Mash with new Mashes, if needed.
+        # Will raise a TypeError if we hit a subattribute that is not a
+        # Hash, Mash, or Array.
+        attribute = parts[0..-3].inject(@data) do |attrs, key|
+          attrs[key] ||= Mash.new
+          attrs[key]
+        end
+
+        # Set the subattribute to the value.
+        attribute[parts[-2]] = parts[-1]
         @data[name]
       end
 
@@ -195,12 +206,6 @@ module Ohai
       rescue NoMethodError
         # NoMethodError occurs when trying to access a key on nil
         nil
-      end
-
-      def Array18(*args)
-        return nil if args.empty?
-        return args.first if args.length == 1
-        return *args
       end
     end
   end
